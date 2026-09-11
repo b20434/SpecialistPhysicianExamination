@@ -45,6 +45,17 @@ body{
 h1,h2,h3{font-weight:700;letter-spacing:.01em;margin:0}
 a{color:var(--teal)}
 
+/* ---------- 即時版：資料載入狀態 ---------- */
+.load-status{margin-top:1.25rem;padding:1rem 1.125rem;border:1px solid var(--rule);background:var(--card);
+  font-size:var(--fs-sub);line-height:var(--lh-loose);border-left-width:4px}
+.load-status.info{border-left-color:var(--teal)}
+.load-status.warn{border-left-color:#B7791F;background:#FFF8E6}
+.load-status.error{border-left-color:var(--brick);background:var(--brick-soft)}
+.load-status strong{display:block;margin-bottom:.25rem}
+.load-status code{background:#EEF1F3;padding:.05rem .35rem;border-radius:3px}
+/* 資料還沒載入前，先隱藏所有內容區，避免看到空白框 */
+body.loading section{display:none}
+
 /* ---------- 頁首 ---------- */
 header{padding-block:2rem 1.5rem;border-bottom:2px solid var(--ink)}
 h1{font-size:clamp(1.375rem, 1.1rem + 1.6vw, 1.9375rem);line-height:1.25}
@@ -242,9 +253,10 @@ td.rate.miss{color:var(--brick);font-weight:700}
 }
 </style>
 </head>
-<body>
+<body class="loading">
 <div id="tip"></div>
 <div class="wrap">
+<div id="load-status" class="load-status" style="display:none"></div>
 
 <header>
   <h1>專科醫師考試通過率儀表板</h1>
@@ -300,8 +312,8 @@ td.rate.miss{color:var(--brick);font-weight:700}
 </div>
 
 <script>
-var DATA = {"updated":"115.01.14","caveat":"","rows":[{"y":113,"cat":"部定專科","field":"牙醫","name":"口腔顎面外科","n":2,"p":2,"note":""},{"y":113,"cat":"部定專科","field":"牙醫","name":"牙周病科","n":2,"p":2,"note":""},{"y":113,"cat":"部定專科","field":"牙醫","name":"齒顎矯正科","n":3,"p":3,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"兒科","n":4,"p":4,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"內科","n":14,"p":14,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"外科","n":8,"p":8,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"婦產科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"家醫科","n":4,"p":4,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"復健科","n":1,"p":0,"note":"應試者已離職"},{"y":113,"cat":"部定專科","field":"西醫","name":"急診科","n":4,"p":4,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"放射腫瘤科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"放射診斷科","n":3,"p":3,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"整形外科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"泌尿外科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"神經外科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"神經科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"精神科","n":1,"p":0,"note":"筆試通過、口試未過，11404複試"},{"y":113,"cat":"部定專科","field":"西醫","name":"耳鼻喉科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"職業醫學科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"骨科","n":2,"p":2,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"麻醉科","n":2,"p":2,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"國際生活型態醫學","n":3,"p":3,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"大腸直腸外科","n":2,"p":2,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"心臟內科","n":4,"p":4,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"感染症專科","n":1,"p":1,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"消化系外科","n":1,"p":1,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"胸腔暨心臟血管外科","n":3,"p":3,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"腎臟科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"口腔顎面外科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"牙周病科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"牙髓病科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"齒顎矯正科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"兒科","n":3,"p":3,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"內科","n":12,"p":12,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"外科","n":7,"p":7,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"婦產科","n":3,"p":3,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"家醫科","n":4,"p":4,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"復健科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"急診科","n":4,"p":4,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"放射腫瘤科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"放射診斷科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"整形外科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"泌尿外科","n":1,"p":0,"note":"未通過1人"},{"y":114,"cat":"部定專科","field":"西醫","name":"眼科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"神經外科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"神經科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"精神科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"耳鼻喉科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"重症醫學科","n":3,"p":3,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"骨科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"麻醉科","n":3,"p":3,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"一般及消化系外科","n":4,"p":3,"note":"未通過1人"},{"y":114,"cat":"次專科","field":"西醫","name":"介入性心臟血管專科","n":4,"p":4,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"兒科消化學","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"內分泌新陳代謝專科","n":2,"p":2,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"國際生活型態醫學","n":3,"p":3,"note":"原始表人數欄填5、名單僅3人，待確認"},{"y":114,"cat":"次專科","field":"西醫","name":"外傷科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"大腸直腸外科","n":2,"p":2,"note":"含代訓醫師1人"},{"y":114,"cat":"次專科","field":"西醫","name":"婦女泌尿","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"安寧緩和專科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"心臟血管專科","n":2,"p":2,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"感染症專科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"消化系內科","n":3,"p":3,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"老年醫學專科","n":2,"p":2,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"胸腔暨重症專科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"腎臟科","n":3,"p":3,"note":""}]};
-(function(){
+function render(DATA){
+document.body.classList.remove('loading');
 var rows = DATA.rows;
 var _ys=[]; rows.forEach(function(r){if(_ys.indexOf(r.y)<0)_ys.push(r.y)}); _ys.sort(function(a,b){return a-b});
 var YB = _ys[_ys.length-1], YA = _ys.length>1? _ys[_ys.length-2] : YB;
@@ -502,7 +514,109 @@ $('split').innerHTML =
   $('obs').innerHTML=o.map(function(t){return '<li>'+t+'</li>'}).join('');
 })();
 
-})();
+}
+
+/* ==========================================================================
+   即時版：開啟網頁時直接從 Google 試算表「發布到網路」的 CSV 讀資料
+   ---------------------------------------------------------------------------
+   設定方式（只做一次）：
+   1. 開啟試算表 → 檔案 → 共用 → 發布到網路
+   2. 左邊下拉選「考試資料」分頁，右邊選「逗號分隔值 (.csv)」→ 按「發布」
+   3. 把出現的網址貼到下面 CSV_URL 的引號裡（網址結尾通常是 output=csv）
+   之後試算表怎麼改，這個網頁重新整理就會跟著變，不需要再匯出上傳。
+   ========================================================================== */
+var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSUf3-0fBjyFdUpmCQKASoJlMxdQmxwuFJFuLODXUfZcjYwerG81bepr4Uz0ZnyTRpeReDxQ4ldNEpa/pub?gid=625625594&single=true&output=csv";
+
+/* 讀取狀態畫面 */
+var statusBox = document.getElementById('load-status');
+function showStatus(kind, title, detail){
+  statusBox.className = 'load-status ' + kind;
+  statusBox.innerHTML = '<strong>' + title + '</strong>' + (detail ? '<div>' + detail + '</div>' : '');
+  statusBox.style.display = 'block';
+}
+function hideStatus(){ statusBox.style.display = 'none'; }
+
+/* 簡易 CSV 解析：支援雙引號包住的欄位（備註裡可能有逗號或換行） */
+function parseCSV(text){
+  var rows = [], row = [], cell = '', q = false;
+  text = text.replace(/^\uFEFF/, '');
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i], n = text[i + 1];
+    if (q) {
+      if (c === '"' && n === '"') { cell += '"'; i++; }
+      else if (c === '"') { q = false; }
+      else { cell += c; }
+    } else {
+      if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\r') { /* 略過 */ }
+      else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+/* 把 CSV 轉成儀表板要的資料結構，欄位依「標題名稱」對應，不怕欄位順序調動 */
+function csvToData(text){
+  var table = parseCSV(text);
+  if (!table.length) throw new Error('CSV 是空的');
+  var head = table[0].map(function(h){ return String(h).trim(); });
+  function col(name){
+    var i = head.indexOf(name);
+    if (i < 0) throw new Error('找不到「' + name + '」這一欄，請確認發布的是「考試資料」分頁，且標題列沒有改名');
+    return i;
+  }
+  var iY = col('年度'), iC = col('考試類別'), iF = col('醫學領域'), iN = col('專科別'),
+      iP = col('參加人數'), iQ = col('通過人數'), iR = head.indexOf('備註');
+  var rows = [];
+  for (var r = 1; r < table.length; r++) {
+    var v = table[r];
+    var y = String(v[iY] || '').trim(), name = String(v[iN] || '').trim(), n = String(v[iP] || '').trim();
+    if (!y || !name || !n) continue;                       /* 空白列略過 */
+    var nn = Number(n), pp = Number(String(v[iQ] || '').trim()) || 0;
+    if (isNaN(nn) || nn <= 0) continue;
+    rows.push({
+      y: Number(y),
+      cat: String(v[iC] || '').trim() || '部定專科',
+      field: String(v[iF] || '').trim() || '西醫',
+      name: name, n: nn, p: pp,
+      note: iR >= 0 ? String(v[iR] || '').trim() : ''
+    });
+  }
+  if (!rows.length) throw new Error('CSV 裡沒有讀到任何有效資料列');
+  var today = new Date();
+  var roc = (today.getFullYear() - 1911) + '.' + String(today.getMonth() + 1).padStart(2, '0') + '.' + String(today.getDate()).padStart(2, '0');
+  return { updated: roc, caveat: '', rows: rows };
+}
+
+function loadAndRender(){
+  if (!CSV_URL) {
+    showStatus('warn', '尚未設定資料來源',
+      '請依本檔案 &lt;script&gt; 開頭的說明，把試算表「發布到網路」的 CSV 網址填入 <code>CSV_URL</code>。');
+    return;
+  }
+  showStatus('info', '正在讀取試算表資料…');
+  /* 加上時間戳記避免瀏覽器快取到舊資料 */
+  var url = CSV_URL + (CSV_URL.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
+  fetch(url, { cache: 'no-store' })
+    .then(function(res){
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(function(text){
+      if (/<html/i.test(text.slice(0, 200))) throw new Error('拿到的是網頁而不是 CSV，請確認「發布到網路」時格式選的是 .csv，而且已按下「發布」');
+      var data = csvToData(text);
+      hideStatus();
+      render(data);
+    })
+    .catch(function(err){
+      showStatus('error', '讀取資料失敗',
+        String(err.message || err) + '<br>請確認：① 試算表已「發布到網路」且沒有停止發布 ② CSV_URL 貼的是完整網址 ③ 目前可以連上 Google');
+    });
+}
+loadAndRender();
 </script>
 </body>
 </html>
