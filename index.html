@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>專科醫師考試通過率儀表板</title>
+<style>
+:root{
+  --paper:#F7F8F6; --card:#FFFFFF; --ink:#1B2430; --slate:#46596E; --mute:#8A98A6;
+  --rule:#DDE2E6; --teal:#0F6D6B; --teal-soft:#D7E8E7; --brick:#B4462F; --brick-soft:#F3DED8;
+  --hist:#AEBAC5;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.65; font-feature-settings:"tnum" 1;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+h1,h2,h3{font-weight:700;letter-spacing:.01em;margin:0}
+a{color:var(--teal)}
+
+/* header */
+header{padding:56px 0 36px;border-bottom:2px solid var(--ink)}
+h1{font-size:31px;line-height:1.25}
+.sub{margin-top:10px;color:var(--slate);font-size:14px}
+.meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px 26px;font-size:13px;color:var(--mute)}
+
+section{padding:46px 0;border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+h2{font-size:20px}
+.lead{margin:8px 0 26px;color:var(--slate);font-size:14px;max-width:62ch}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.kpi{background:var(--card);padding:20px 18px}
+.kpi .k{font-size:12.5px;color:var(--mute)}
+.kpi .v{font-size:34px;font-weight:700;line-height:1.15;margin-top:6px;letter-spacing:-.02em}
+.kpi .d{font-size:12.5px;color:var(--slate);margin-top:4px}
+.kpi.alert .v{color:var(--brick)}
+.up{color:var(--teal);font-weight:700}
+.down{color:var(--brick);font-weight:700}
+
+/* unit chart */
+.units{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:6px}
+.unitbox{background:var(--card);border:1px solid var(--rule);padding:22px}
+.unitbox h3{font-size:15px;display:flex;align-items:baseline;gap:10px}
+.unitbox h3 span{font-size:12.5px;color:var(--mute);font-weight:400}
+.grid{display:flex;flex-wrap:wrap;gap:4px;margin-top:16px}
+.dot{width:15px;height:15px;background:var(--slate);border-radius:2px;position:relative;cursor:default}
+.dot.f{background:var(--brick)}
+.dot.sub{background:var(--teal)}
+.dot.sub.f{background:var(--brick)}
+@media (prefers-reduced-motion:no-preference){
+  .dot{animation:pop .34s ease-out both}
+}
+@keyframes pop{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:scale(1)}}
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:18px;font-size:12.5px;color:var(--slate)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.unitfoot{margin-top:14px;font-size:13px;color:var(--slate)}
+.unitfoot b{font-size:19px;color:var(--ink)}
+
+/* tooltip */
+#tip{position:fixed;z-index:50;background:var(--ink);color:#fff;font-size:12.5px;padding:5px 9px;border-radius:3px;pointer-events:none;opacity:0;transition:opacity .12s;white-space:nowrap}
+
+/* exceptions */
+.exc{border-left:3px solid var(--brick);background:var(--card);padding:2px 0 2px 0;border-top:1px solid var(--rule);border-right:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.excrow{display:grid;grid-template-columns:66px 136px 1fr;gap:14px;padding:14px 20px;border-bottom:1px solid var(--rule);align-items:baseline}
+.excrow:last-child{border-bottom:0}
+.excrow .yr{font-weight:700}
+.excrow .nm{font-weight:700;color:var(--brick)}
+.excrow .no{font-size:13.5px;color:var(--slate)}
+
+/* table */
+.tabs{display:flex;gap:2px;margin-bottom:18px}
+.tab{border:1px solid var(--rule);background:var(--card);color:var(--slate);padding:7px 16px;font:inherit;font-size:13.5px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tab:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+table{width:100%;border-collapse:collapse;font-size:14px;background:var(--card)}
+th,td{padding:9px 12px;border-bottom:1px solid var(--rule);text-align:right}
+th{background:#EEF1F3;font-size:12.5px;color:var(--slate);font-weight:700;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+td.nm{font-weight:600}
+td.cat{text-align:left;color:var(--mute);font-size:12.5px}
+td.miss{background:var(--brick-soft)}
+td.rate.miss{color:var(--brick);font-weight:700}
+.dash{color:var(--mute)}
+.bar{display:inline-block;height:7px;background:var(--teal);vertical-align:1px;border-radius:1px}
+.bar.f{background:var(--brick)}
+tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0;background:#EEF1F3}
+
+/* split */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+.mini{background:var(--card);border:1px solid var(--rule);padding:20px}
+.mini h3{font-size:14px;margin-bottom:14px}
+.mrow{display:grid;grid-template-columns:82px 1fr 78px;gap:12px;align-items:center;padding:7px 0;font-size:13.5px}
+.track{height:9px;background:var(--brick-soft);position:relative}
+.fill{height:9px;background:var(--teal)}
+.mrow .val{text-align:right;font-weight:700}
+
+.notes{font-size:13.5px;color:var(--slate);max-width:70ch}
+.notes li{margin-bottom:7px}
+footer{padding:34px 0;color:var(--mute);font-size:12.5px;border-top:1px solid var(--rule)}
+
+@media(max-width:820px){
+  .wrap{padding:0 18px 64px}
+  h1{font-size:25px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .units,.split{grid-template-columns:1fr}
+  .exc .excrow{grid-template-columns:60px 1fr;}
+  .excrow .no{grid-column:1/-1}
+  table{font-size:13px} th,td{padding:7px 8px}
+}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<div class="wrap">
+
+<header>
+  <h1>專科醫師考試通過率儀表板</h1>
+  <p class="sub">113 與 114 年度應考結果分析</p>
+  <div class="meta">
+    <span id="m-updated"></span>
+    <span>資料來源：各專科考試時程及報考人員名單</span>
+  </div>
+</header>
+
+<section>
+  <h2 id="kpi-h">114 年度總覽</h2>
+  <p class="lead" id="kpi-lead">下列數字涵蓋部定專科與次專科。</p>
+  <div class="kpis" id="kpis"></div>
+</section>
+
+<section>
+  <h2>每一格代表一位應考醫師</h2>
+  <p class="lead">深灰為部定專科通過、綠色為次專科通過、紅色為未通過。滑鼠移到方格可看科別。</p>
+  <div class="units" id="units"></div>
+</section>
+
+<section id="sec-exc">
+  <h2>未通過名單</h2>
+  <p class="lead">兩個年度合計的未通過人次，這是輔導資源該優先投入的地方。</p>
+  <div class="exc" id="exc"></div>
+</section>
+
+<section>
+  <h2 id="detail-h">各專科明細</h2>
+  <p class="lead">紅底儲存格代表該年度有人未通過；空白「—」代表該年度沒有人報考。</p>
+  <div class="tabs" id="tabs"></div>
+  <div style="overflow-x:auto"><table id="detail"></table></div>
+</section>
+
+<section>
+  <h2 id="split-h">結構分析</h2>
+  <p class="lead">綠色為通過比例，右側淺紅為未通過的缺口。</p>
+  <div class="split" id="split"></div>
+</section>
+
+<section>
+  <h2>觀察重點</h2>
+  <ul class="notes" id="obs"></ul>
+</section>
+
+<footer>
+  <div id="foot"></div>
+</footer>
+</div>
+
+<script>
+var DATA = {"updated":"115.01.14","caveat":"備註：114 年「國際生活型態醫學」原始表人數欄填 5、名單僅 3 人，本表暫以 3 人計，請與該科確認。","rows":[{"y":113,"cat":"部定專科","field":"牙醫","name":"口腔顎面外科","n":2,"p":2,"note":""},{"y":113,"cat":"部定專科","field":"牙醫","name":"牙周病科","n":2,"p":2,"note":""},{"y":113,"cat":"部定專科","field":"牙醫","name":"齒顎矯正科","n":3,"p":3,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"兒科","n":4,"p":4,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"內科","n":14,"p":14,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"外科","n":8,"p":8,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"婦產科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"家醫科","n":4,"p":4,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"復健科","n":1,"p":0,"note":"應試者已離職"},{"y":113,"cat":"部定專科","field":"西醫","name":"急診科","n":4,"p":4,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"放射腫瘤科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"放射診斷科","n":3,"p":3,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"整形外科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"泌尿外科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"神經外科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"神經科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"精神科","n":1,"p":0,"note":"筆試通過、口試未過，11404複試"},{"y":113,"cat":"部定專科","field":"西醫","name":"耳鼻喉科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"職業醫學科","n":1,"p":1,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"骨科","n":2,"p":2,"note":""},{"y":113,"cat":"部定專科","field":"西醫","name":"麻醉科","n":2,"p":2,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"國際生活型態醫學","n":3,"p":3,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"大腸直腸外科","n":2,"p":2,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"心臟內科","n":4,"p":4,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"感染症專科","n":1,"p":1,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"消化系外科","n":1,"p":1,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"胸腔暨心臟血管外科","n":3,"p":3,"note":""},{"y":113,"cat":"次專科","field":"西醫","name":"腎臟科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"口腔顎面外科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"牙周病科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"牙髓病科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"牙醫","name":"齒顎矯正科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"兒科","n":3,"p":3,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"內科","n":12,"p":12,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"外科","n":7,"p":7,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"婦產科","n":3,"p":3,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"家醫科","n":4,"p":4,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"復健科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"急診科","n":4,"p":4,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"放射腫瘤科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"放射診斷科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"整形外科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"泌尿外科","n":1,"p":0,"note":"未通過1人"},{"y":114,"cat":"部定專科","field":"西醫","name":"眼科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"神經外科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"神經科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"精神科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"耳鼻喉科","n":1,"p":1,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"重症醫學科","n":3,"p":3,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"骨科","n":2,"p":2,"note":""},{"y":114,"cat":"部定專科","field":"西醫","name":"麻醉科","n":3,"p":3,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"一般及消化系外科","n":4,"p":3,"note":"未通過1人"},{"y":114,"cat":"次專科","field":"西醫","name":"介入性心臟血管專科","n":4,"p":4,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"兒科消化學","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"內分泌新陳代謝專科","n":2,"p":2,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"國際生活型態醫學","n":3,"p":3,"note":"原始表人數欄填5、名單僅3人，待確認"},{"y":114,"cat":"次專科","field":"西醫","name":"外傷科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"大腸直腸外科","n":2,"p":2,"note":"含代訓醫師1人"},{"y":114,"cat":"次專科","field":"西醫","name":"婦女泌尿","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"安寧緩和專科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"心臟血管專科","n":2,"p":2,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"感染症專科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"消化系內科","n":3,"p":3,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"老年醫學專科","n":2,"p":2,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"胸腔暨重症專科","n":1,"p":1,"note":""},{"y":114,"cat":"次專科","field":"西醫","name":"腎臟科","n":3,"p":3,"note":""}]};
+(function(){
+var rows = DATA.rows;
+var _ys=[]; rows.forEach(function(r){if(_ys.indexOf(r.y)<0)_ys.push(r.y)}); _ys.sort(function(a,b){return a-b});
+var YB = _ys[_ys.length-1], YA = _ys.length>1? _ys[_ys.length-2] : YB;
+var $ = function(id){return document.getElementById(id)};
+var pct = function(p,n){return n? (p/n*100) : null};
+var fp = function(v,d){return v===null? '—' : v.toFixed(d===undefined?1:d)+'%'};
+
+document.getElementById('m-updated').textContent = '資料更新：' + DATA.updated;
+document.querySelector('header .sub').textContent = YA+' 與 '+YB+' 年度應考結果分析';
+document.querySelector('#kpi-h').textContent = YB+' 年度總覽';
+document.querySelector('#kpi-lead').textContent = '下列數字涵蓋部定專科與次專科，第二行為與 '+YA+' 年度的比較。';
+document.querySelector('#split-h').textContent = '結構分析';
+[].forEach.call(document.querySelectorAll('#detail-h'),function(e){e.textContent='各專科明細（'+YA+' vs '+YB+'）'});
+
+function agg(f){var n=0,p=0; rows.forEach(function(r){if(f(r)){n+=r.n;p+=r.p}}); return {n:n,p:p,r:pct(p,n)}}
+var A = agg(function(r){return r.y===YA}), B = agg(function(r){return r.y===YB});
+
+/* ---------- KPI ---------- */
+function delta(cur,prev,unit,inv){
+  var d = cur-prev, s = (d>0?'+':'') + (unit==='%'? d.toFixed(1)+' 個百分點' : d+' 人');
+  if(d===0) return '與 '+YA+' 年持平';
+  var good = inv ? d<0 : d>0;
+  return YA+' 年 ' + (unit==='%'? prev.toFixed(1)+'%' : prev+' 人') + '，<span class="'+(good?'up':'down')+'">'+s+'</span>';
+}
+$('kpis').innerHTML = [
+  {k:'應考人數',v:B.n+' 人',d:delta(B.n,A.n,'人')},
+  {k:'通過人數',v:B.p+' 人',d:delta(B.p,A.p,'人')},
+  {k:'整體通過率',v:B.r.toFixed(1)+'%',d:delta(B.r,A.r,'%')},
+  {k:'未通過人數',v:(B.n-B.p)+' 人',d:delta(B.n-B.p,A.n-A.p,'人',true),cls:' alert'}
+].map(function(o){
+  return '<div class="kpi'+(o.cls||'')+'"><div class="k">'+o.k+'</div><div class="v">'+o.v+'</div><div class="d">'+o.d+'</div></div>';
+}).join('');
+
+/* ---------- unit chart ---------- */
+var tip = $('tip');
+function unitbox(y){
+  var rs = rows.filter(function(r){return r.y===y}).sort(function(a,b){
+    return (a.cat===b.cat? 0 : (a.cat==='部定專科'?-1:1)) || a.name.localeCompare(b.name,'zh-Hant');
+  });
+  var tot=agg(function(r){return r.y===y});
+  var dots='', i=0;
+  rs.forEach(function(r){
+    for(var k=0;k<r.n;k++){
+      var fail = k >= r.p;
+      dots += '<span class="dot'+(r.cat==='次專科'?' sub':'')+(fail?' f':'')+
+        '" style="animation-delay:'+(i*7)+'ms" data-t="'+r.name+'（'+r.cat+'）'+(fail?'　未通過':'　通過')+'"></span>';
+      i++;
+    }
+  });
+  return '<div class="unitbox"><h3>'+y+' 年度 <span>'+tot.n+' 人應考</span></h3>'+
+    '<div class="grid">'+dots+'</div>'+
+    '<div class="unitfoot">通過 <b>'+tot.p+'</b> 人　通過率 <b>'+tot.r.toFixed(1)+'%</b>'+
+    (tot.n-tot.p? '　未通過 <b style="color:var(--brick)">'+(tot.n-tot.p)+'</b> 人':'')+'</div></div>';
+}
+$('units').innerHTML = unitbox(YA) + unitbox(YB);
+$('units').insertAdjacentHTML('beforeend',
+ '<div class="legend" style="grid-column:1/-1"><span><i style="background:var(--slate)"></i>部定專科通過</span>'+
+ '<span><i style="background:var(--teal)"></i>次專科通過</span>'+
+ '<span><i style="background:var(--brick)"></i>未通過</span></div>');
+
+document.addEventListener('mouseover',function(e){
+  var t=e.target;
+  if(t.classList && t.classList.contains('dot')){
+    tip.textContent=t.getAttribute('data-t'); tip.style.opacity=1;
+    var r=t.getBoundingClientRect();
+    tip.style.left=Math.min(r.left, innerWidth-tip.offsetWidth-12)+'px';
+    tip.style.top=(r.top-30)+'px';
+  } else { tip.style.opacity=0; }
+});
+
+/* ---------- exceptions ---------- */
+var fails = rows.filter(function(r){return r.p<r.n && (r.y===YA||r.y===YB)}).sort(function(a,b){return b.y-a.y});
+$('exc').innerHTML = fails.length? fails.map(function(r){
+  return '<div class="excrow"><div class="yr">'+r.y+' 年</div><div class="nm">'+r.name+'</div>'+
+   '<div class="no">'+r.cat+'　應考 '+r.n+' 人、通過 '+r.p+' 人'+(r.note? '　·　'+r.note : '')+'</div></div>';
+}).join('') : '<div class="excrow"><div class="no">兩年度全數通過。</div></div>';
+
+/* ---------- detail table ---------- */
+var filt='all';
+function drawTable(){
+  var names={}, order=[];
+  rows.forEach(function(r){
+    if(r.y!==YA&&r.y!==YB) return;
+    if(filt!=='all'&&r.cat!==filt) return;
+    if(!names[r.name]){names[r.name]={cat:r.cat};order.push(r.name)}
+    names[r.name][r.y]=r;
+  });
+  order.sort(function(a,b){
+    var A2=names[a],B2=names[b];
+    if(A2.cat!==B2.cat) return A2.cat==='部定專科'?-1:1;
+    var an=(A2[YB]||A2[YA]).n, bn=(B2[YB]||B2[YA]).n;
+    return bn-an || a.localeCompare(b,'zh-Hant');
+  });
+  var h='<thead><tr><th>專科別</th><th>類別</th><th>113 應考</th><th>113 通過</th><th>113 通過率</th>'+
+        '<th>114 應考</th><th>114 通過</th><th>114 通過率</th></tr></thead><tbody>';
+  order.forEach(function(nm){
+    var o=names[nm], a=o[YA], b=o[YB];
+    function mc(r){ return (r&&r.p<r.n)? ' class="miss"' : '' }
+    function cell(r,key){ return r? r[key] : '<span class="dash">—</span>' }
+    function rate(r){
+      if(!r) return '<span class="dash">—</span>';
+      var v=pct(r.p,r.n);
+      return '<span class="bar'+(v<100?' f':'')+'" style="width:'+(v*0.42)+'px"></span> '+v.toFixed(0)+'%';
+    }
+    var ma=mc(a), mb=mc(b);
+    h+='<tr><td class="nm">'+nm+'</td><td class="cat">'+o.cat+'</td>'+
+       '<td'+ma+'>'+cell(a,'n')+'</td><td'+ma+'>'+cell(a,'p')+'</td><td class="rate'+(ma?' miss':'')+'">'+rate(a)+'</td>'+
+       '<td'+mb+'>'+cell(b,'n')+'</td><td'+mb+'>'+cell(b,'p')+'</td><td class="rate'+(mb?' miss':'')+'">'+rate(b)+'</td></tr>';
+  });
+  var fa=agg(function(r){return r.y===YA&&(filt==='all'||r.cat===filt)});
+  var fb=agg(function(r){return r.y===YB&&(filt==='all'||r.cat===filt)});
+  h+='</tbody><tfoot><tr><td>合計</td><td></td><td>'+fa.n+'</td><td>'+fa.p+'</td><td>'+fp(fa.r,1)+
+     '</td><td>'+fb.n+'</td><td>'+fb.p+'</td><td>'+fp(fb.r,1)+'</td></tr></tfoot>';
+  $('detail').innerHTML=h;
+}
+$('tabs').innerHTML=[['all','全部'],['部定專科','部定專科'],['次專科','次專科']].map(function(t,i){
+  return '<button class="tab" role="tab" aria-selected="'+(i===0)+'" data-f="'+t[0]+'">'+t[1]+'</button>';
+}).join('');
+$('tabs').addEventListener('click',function(e){
+  var b=e.target.closest('.tab'); if(!b)return;
+  filt=b.getAttribute('data-f');
+  [].forEach.call($('tabs').children,function(c){c.setAttribute('aria-selected',c===b)});
+  drawTable();
+});
+drawTable();
+
+/* ---------- split ---------- */
+function mini(title,items){
+  return '<div class="mini"><h3>'+title+'</h3>'+items.map(function(it){
+    var v=it.r===null?0:it.r;
+    return '<div class="mrow"><div>'+it.k+'</div><div class="track"><div class="fill" style="width:'+v+'%"></div></div>'+
+      '<div class="val">'+fp(it.r,1)+'</div></div>'+
+      '<div style="font-size:12px;color:var(--mute);margin:-4px 0 8px">通過 '+it.p+' 人 / 應考 '+it.n+' 人'+
+      (it.n-it.p? '，未通過 '+(it.n-it.p)+' 人':'')+'</div>';
+  }).join('')+'</div>';
+}
+function pack(k,f){var a=agg(f);a.k=k;return a}
+function byYear(label,f){
+  return mini(label,[YA,YB].map(function(y){
+    return pack(y+' 年', function(r){return r.y===y && f(r)});
+  }));
+}
+$('split').innerHTML =
+  byYear('部定專科', function(r){return r.cat==='部定專科'}) +
+  byYear('次專科',   function(r){return r.cat==='次專科'}) +
+  byYear('西醫',     function(r){return r.field==='西醫'}) +
+  byYear('牙醫',     function(r){return r.field==='牙醫'});
+
+/* ---------- observations ---------- */
+(function(){
+  var o=[];
+  o.push('114 年整體通過率 '+B.r.toFixed(1)+'%（'+B.p+'/'+B.n+'），113 年為 '+A.r.toFixed(1)+'%（'+A.p+'/'+A.n+'）。');
+  var pb=agg(function(r){return r.y===YB&&r.cat==='部定專科'}), pa=agg(function(r){return r.y===YA&&r.cat==='部定專科'});
+  var dir = pb.r>pa.r? '回升至' : (pb.r<pa.r? '下降至' : '持平於');
+  o.push('部定專科由 '+YA+' 年 '+pa.r.toFixed(1)+'% '+dir+' '+YB+' 年 '+pb.r.toFixed(1)+'%。');
+  var sb=agg(function(r){return r.y===YB&&r.cat==='次專科'});
+  var sa=agg(function(r){return r.y===YA&&r.cat==='次專科'});
+  if(sb.n) o.push('次專科應考人數 '+YA+' 年 '+sa.n+' 人、'+YB+' 年 '+sb.n+' 人'+
+    (sa.n&&sb.n>sa.n? '，成長 '+Math.round((sb.n/sa.n-1)*100)+'%，反映次專科訓練量能擴增':'')+
+    '；'+YB+' 年通過率 '+sb.r.toFixed(1)+'%。');
+  var f14=rows.filter(function(r){return r.y===YB&&r.p<r.n}).map(function(r){return r.name});
+  var f13=rows.filter(function(r){return r.y===YA&&r.p<r.n}).map(function(r){return r.name});
+  var rep=f14.filter(function(x){return f13.indexOf(x)>=0});
+  o.push(YB+' 年未通過者為 '+(f14.length?f14.join('、'):'無')+'；'+YA+' 年為 '+(f13.length?f13.join('、'):'無')+'。'+
+    (rep.length? '其中 '+rep.join('、')+' 連續兩年出現，建議優先檢視該科的考前準備機制。'
+               : '兩年未通過科別完全不重複，顯示為個案而非特定科別的系統性問題。'));
+  var dnA=agg(function(r){return r.y===YA&&r.field==='牙醫'}), dnB=agg(function(r){return r.y===YB&&r.field==='牙醫'});
+  if(dnA.n+dnB.n) o.push('牙科系統兩年合計 '+(dnA.n+dnB.n)+' 人次應考、通過 '+(dnA.p+dnB.p)+' 人次'+
+    ((dnA.p+dnB.p)===(dnA.n+dnB.n)? '，全數通過。' : '。'));
+  var big=null; rows.filter(function(r){return r.y===YB}).forEach(function(r){if(!big||r.n>big.n)big=r});
+  if(big) o.push(big.name+'為 '+YB+' 年最大應考族群（'+big.n+' 人），通過率 '+pct(big.p,big.n).toFixed(1)+
+    '%。內科部設有考前複習班，其做法可作為其他科部參考。');
+  $('obs').innerHTML=o.map(function(t){return '<li>'+t+'</li>'}).join('');
+})();
+
+$('foot').innerHTML = '本儀表板由「考試資料」分頁自動產生，共 '+rows.length+' 筆紀錄，涵蓋 '+
+  (function(){var s={};rows.forEach(function(r){s[r.y]=1});var k=Object.keys(s);return k[0]+'–'+k[k.length-1]})()+' 年度。'+
+  (DATA.caveat? '<br>'+DATA.caveat : '');
+})();
+</script>
+</body>
+</html>
